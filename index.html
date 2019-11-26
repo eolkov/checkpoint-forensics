@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>Threat Details Report</title>
+
+	<!-- Stylesheets -->
+	<link rel="stylesheet" href="css/ext/nv.d3.min.css">
+	<link rel="stylesheet" href="css/ext/bootstrap.min.css">
+	<link rel="stylesheet" href="css/ext/balloon.min.css">
+	<link rel="stylesheet" href="css/ext/owl.carousel.min.css">
+	<link rel="stylesheet" href="css/ext/dataTables.bootstrap.min.css">
+	<link rel="stylesheet" href="css/ext/ol.css">
+
+	<link rel="stylesheet" href="css/base.css">
+	<link rel="stylesheet" href="css/style.css">
+
+	<!-- Fonts -->
+	<link href="fonts/OpenSans.css" rel="stylesheet">
+</head>
+<body>
+	<!-- Header -->
+	<div id="print-view-title" class="only-in-print">
+		<div>Threat Detials Report</div>
+		<img src="images/cp-logo-print-view.svg" alt="Check Point">
+	</div>
+	<nav class="navbar navbar-default navbar-fixed-top">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<span id="title" class="navbar-brand" href="#"><!--Threat Details Report--></span>
+			</div>
+
+			<div id="actions" class="dropdown">
+				<a class="dropdown-toggle" data-toggle="dropdown">
+					Actions<span class="caret"></span>
+				</a>
+				<ul class="dropdown-menu">
+					<li><a class="download-file" href="#" download><img src="images/download.svg">Download File</a></li>
+					<li><a id="copy-report-path" href="#"><img src="images/export.svg">Copy Path to Clipboard</a></li>
+
+					<li class="divider"></li>
+					<li><a href="mailto:emergency-response@checkpoint.com">Contact Incident Response Team</a></li>
+					<!-- <li><a href="mailto:TOC@checkpoint.com">Report False Positive</a></li> -->
+				</ul>
+			</div>
+
+			<img class="nav navbar-nav navbar-right" id="logo" src="images/cp-logo.svg" alt="Check Point">
+		</div><!-- /.container -->
+	</nav>
+
+	<!-- False Positive Header (showed only if file status changes to False Positive) -->
+	<nav id="fp_header" class="navbar navbar-default navbar-fixed-top" style="display: none">
+		<div class="container">
+			<!-- <div id="fp_warning">
+				<img src="images/warning.svg">
+				<div>UPDATE</div>	
+			</div> -->
+			<div id="fp_description">
+				<div><span>note:&nbsp;</span>Due to recent research activity this <u>file verdict</u> was updated:</div>
+				<div>from malicious to benign</div>	
+			</div>
+			<!-- <a id="fp_info" href="#">More info...</a> -->
+		</div>
+	</nav>
+
+	<div id="sticky-header" class="container">
+		<img id="file_img">
+		<div>
+			<div id="file_name"></div>
+			<div id="header-file-info">
+				<div><span class="grey">SIZE:&nbsp;</span><span id="file_size"></span></div>
+				<div><span class="grey">TYPE:&nbsp;</span><span id="file_type"></span></div>
+				<div>
+					<a class="btn btn-default hashes-dropdown no-print" role="button">HASH list&nbsp;&nbsp;<span class="caret"/></a>
+					<div class="hashes-content hidden">
+						<div id="md5"><div class="hash-container"><b>MD5:</b><div class="header_hash"></div></div><a class="no-print">Copy</a></div>
+						<div id="sha1"><div class="hash-container"><b>SHA1:</b><div class="header_hash"></div></div><a class="no-print">Copy</a></div>
+						<div id="sha256"><div class="hash-container"><b>SHA256:</b><div class="header_hash"></div></div><a class="no-print">Copy</a></div>
+					</div>
+				</div>
+			</div>
+			<div class="hashes-content-container hidden"></div>
+		</div>
+	</div>
+
+	<!-- Main Container -->
+	<div id="main-container" class="container">
+
+	<!-- Brief Details -->
+		<div id="brief">
+			<div class="brief-item">
+				<img id="verdict_img">
+				<div>
+					<div class="brief-title">Verdict</div>
+					<div id="verdict"></div>
+				</div>
+			</div>
+			<div class="brief-item" data-balloon="Actual action can be viewed in admin logs" data-balloon-pos="up">
+				<img id="action_img">
+				<div>
+					<div class="brief-title">
+						Action&nbsp;
+						<small>(Defined in Profile)</small>
+					</div>
+					<div id="action"></div>
+				</div>
+			</div>
+			<div class="brief-item">
+				<img id="confidence_img">
+				<div>
+					<div class="brief-title">Confidence</div>
+					<div id="confidence"></div>
+				</div>
+			</div>
+			<div class="brief-item">
+				<img id="risk_img">
+				<div>
+					<div class="brief-title">Secure / Risk</div>
+					<div id="risk"></div>
+				</div>
+			</div>
+			<div class="brief-item">
+				<div id="classification_images"></div>
+				<div>
+					<div class="brief-title">Classification</div>
+					<div id="classification"></div>
+				</div>
+			</div>
+			<!-- <div class="brief-item no-print">
+				Are you under attack? <a href="mailto:emergency-response@checkpoint.com">Contact Us</a><br>
+				<center><img style="margin-top: 10px" src="images/ir_logo.svg" alt="Incident Response Team"></center>
+			</div> -->
+		</div>
+
+        <!-- Hidden Values -->
+        <input id="uuid" type="hidden">
+        <input id="gw_id" type="hidden">
+        <input id="startTimeId" type="hidden">
+
+		<!-- Attack Vector -->
+		<div class="panel panel-default" id="atk_vec">
+				<div class="panel-heading">
+					<img src="images/attack_vec.svg">
+					<h4 class="panel-title">ATTACK VECTOR</h4>
+					<div id="timestamp"></div>
+				</div>
+				<div class="panel-body">
+					<!-- <div class="row"> -->
+						<div class="col-xs-12" id="atk_vec_inner">
+						</div>
+					<!-- </div> -->
+				</div>
+		</div>
+
+		<!-- Malware Family -->
+		<div class="panel panel-default" id="malware_family">
+			<div class="panel-heading">
+				<img src="images/DNA.svg"><h4 class="panel-title">MALWARE FAMILY</h4>
+			</div>
+			<div class="panel-body">
+				<div id="family-wrapper">
+					<div id="families-dna-chains">
+						<svg id="dna">
+							<defs>
+								<style type="text/css">
+									rect { cursor: pointer; }
+									<![CDATA[
+										@font-face {
+											font-family: 'Open Sans';
+											src: url('fonts/open-sans-v15-latin-regular.woff');
+										}
+									]]>
+								</style>
+							</defs>
+						</svg>
+					</div>
+					<div id="family">
+						<div>
+							<h1><span style="display: none" id="similarity-percentage"></span></h1>
+							<div class="section-actions">
+									<a data-balloon="Copy" data-balloon-pos="up"><img src="images/copy.svg"></a>
+									<a data-balloon="Tweet" data-balloon-pos="up"><img src="images/Tweet.svg"></a>
+							</div>
+							<p></p>
+							<a id="family-link" href="#" target="_blank">Read more on Check Point Threatcloud Intelligence</a>
+						</div>
+						<div id="similarities">
+							<div id="similarities-header"><div>Similarity Analysis</div><hr></div>
+							<div id="similarities-body">
+								<ul class="nav nav-pills nav-stacked col-lg-4 col-md-4 no-print">
+									<li>
+										<a data-toggle="tab" href="#similar-code" aria-expanded="false">
+											Similar code blocks
+										</a>
+									</li>
+									<li>
+										<a data-toggle="tab" href="#similar-iocs" aria-expanded="false">
+											Similar behavioral IOCs
+										</a>
+									</li>
+									<li>
+										<a data-toggle="tab" href="#similar-hashes" aria-expanded="false">
+											Similar hashes
+										</a>
+									</li>
+									<li style="display: none">
+										<a data-toggle="tab" href="#similar-strings" aria-expanded="false">
+											Similar strings
+										</a>
+									</li>
+									<li style="display: none">
+										<a data-toggle="tab" href="#similar-communication" aria-expanded="false">
+											Similar communication
+										</a>
+									</li>
+								</ul>
+
+								<div id="similarities-content" class="tab-content col-lg-8 col-md-8">
+									<div class="tab-content tab-pane">
+										<div id="similar-code" class="tab-pane">
+										</div>
+										<div id="similar-iocs" class="tab-pane">
+											<ul type="disc">	
+											</ul>
+										</div>
+										<div id="similar-hashes" class="tab-pane">
+											<ul type="disc">
+											</ul>
+										</div>
+										<div id="similar-strings" class="tab-pane">
+											<ul type="disc">
+											</ul>
+										</div>
+										<div id="similar-communication" class="tab-pane">
+											<ul type="disc">
+											</ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div id="map-wrapper">
+					<div id="map_graph_wrapper">
+						<div id="map_controls">
+							<a href="#" class="btn btn-default btn-circle"><span class="glyphicon">&#xe072;</span></a>
+							<a href="#" class="btn btn-default btn-circle">
+								<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
+									<defs>
+									</defs>
+									<title>Refresh</title>
+									<g id="Content">
+										<path class="cls-1" d="M42.88,20.8,35.44,30,27.56,20.8h5.55a10.94,10.94,0,1,0-4.8,14l3,3.39A15.32,15.32,0,1,1,37.81,20.8Z"/>
+									</g>
+								</svg>
+							</a>
+						</div>
+						<div id="map_graph">
+							<svg></svg>
+						</div>
+					</div>
+					<div id="map" class="map">
+						<div id="point_info"></div>
+					</div>
+					<div id="map_time"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- MITRE section -->
+		<div class="panel panel-default" id="mitre">
+			<div class="panel-heading">
+				<h4 class="panel-title"><b>MITRE</b> <small>ATT&CK</small></h4>
+			</div>
+			<div class="panel-body">
+				<div class="panel-body-header" >
+					<!--
+					<div id="mitre_download" class="section-actions">
+						<a data-balloon="download things related to mitre" data-balloon-pos="up"><img src="images/download.svg"></a>
+					</div>
+					-->
+				</div>
+				<div id="mitre_list" class="table-wrapper">
+					<table class="table" id="mitre_table">
+
+					</table>
+				</div>
+				<!-- MITRE popup dialoge -->
+				<div class="modal fade" id="mitreModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="exampleModalLongTitle">
+									<span class="modal-header-prefix">MITRE ATT&CK<sup>tm</sup></span>
+									<span class="modal-header-suffix"></span>
+								</h5>
+								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal-body">
+								<table class="table table-striped">
+									<tbody>
+									<tr>
+										<td>ATT&CK ID</td>
+										<td id="mitre_modal_id"></td>
+									</tr>
+									<tr>
+										<td>Tactics</td>
+										<td id="mitre_modal_tactics"></td>
+									</tr>
+									<tr>
+										<td>Indicators</td>
+										<td id="mitre_modal_ioc"></td>
+									</tr>
+									<tr>
+										<td>Description</td>
+										<td id="mitre_modal_description"></td>
+									</tr>
+									<tr>
+										<td>Source</td>
+										<td><a id="mitre_modal_source_link" href="#" target="_blank">https://www.checkpoint.com</a></td>
+									</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Technical Details -->
+		<div class="panel panel-default" id="tech_det">
+			<div class="panel-heading">
+				<img src="images/tree.svg"><h4 class="panel-title">FILE LIST</h4>
+			</div>
+			<div class="panel-body">
+				<!-- <div class="row"> -->
+					<!-- File List -->
+					<div class="col-xs-12" id="file_list">
+						<!-- <div class="box-header">File List
+							<a id="export_iocs" class="box-action" href="#" data-balloon="Export IOCs" data-balloon-pos="up"><img src="images/export.svg"></a>
+						</div> -->
+						<!-- <div class="box-content"> -->
+							<div class="table-wrapper">
+								<table class="table">
+									<thead>
+										<tr>
+											<td width="72%">Name</td>
+											<td width="7%">Type</td>
+											<td width="7%">Verdict</td>
+											<td width="7%" class="no-print">Size</td>
+											<!-- <td>MD5</td> -->
+											<td width="7%" class="no-print">Context</td>
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						<!-- </div> -->
+					</div>
+				<!-- </div> -->
+			</div>
+		</div>
+
+		<!-- Suspicious Activities -->
+		<div class="panel panel-default" id="susp_act">
+			<div class="panel-heading">
+				<img src="images/attacks/Infostealer.svg"><h4 class="panel-title">SUSPICIOUS ACTIVITIES</h4>
+			</div>
+			<div class="panel-body">
+				<!-- Tabs -->
+				<div style="position: relative;">
+					<ul class="nav nav-tabs no-print">
+					</ul>
+					<div id="susp_act_export_csv" class="section-actions">
+						<a data-balloon="Export All to CSV" data-balloon-pos="up"><img src="images/export.svg"></a>
+					</div>
+				</div>
+				<!-- Tables -->
+				<div class="tab-content"></div>
+			</div>
+		</div>
+
+		<!-- Emulation Videos -->
+		<div class="panel panel-default" id="emu_videos_panel">
+			<div class="panel-heading">
+				<img src="images/view.svg"><h4 class="panel-title">EMULATION VIDEOS</h4>
+			</div>
+			<div class="panel-body">
+				<div id="emu-videos-wrapper">
+					<div class="no-print" id="carousel_left"></div>
+					<div id="emu-videos" class="owl-carousel owl-theme"></div>
+					<div class="no-print" id="carousel_right"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Timeline -->
+		<div class="panel panel-default" id="timelines">
+			<div class="panel-heading">
+				<img src="images/timeline.svg"><h4 class="panel-title">ADVANCED FORENSICS</h4>
+			</div>
+			<div class="panel-body">
+				<!-- <div class="row"> -->
+					<!-- Pills -->
+					<ul class="nav nav-pills nav-stacked col-lg-3 col-md-4 no-print"></ul>
+
+					<!-- Timeline & Tables -->
+					<div class="tab-content col-lg-9 col-md-8">
+						<div id="timeline-buttons">
+							<!-- Toggle between Timeline view and Table view -->
+							<div id="timeline-toggle" class="no-print">
+								<a class="active" data-toggle="tab" href="#timeline"><img src="images/chart.svg" alt="Timeline"></a>
+								<a data-toggle="tab" href="#events_table"><img src="images/table.svg" alt="Table"></a>
+							</div>
+							<!-- Timeline section actions -->
+							<div class="section-actions no-print" id="timeline_actions">
+								<a id="sba_report_download" href="#" data-balloon="Download SBA Report" data-balloon-pos="up"><img src="images/sba.svg"></a>
+								<a id="detailed_behavioral_report_download" href="#" data-balloon="Download Detailed Behavioral Report" data-balloon-pos="up"><img src="images/download.svg"></a>
+								<a id="pcap_download" href="#" data-balloon="Download .pcap File" data-balloon-pos="up"><img src="images/download.svg"></a>
+								<a id="timeline_export_csv" data-balloon="Export CSV" data-balloon-pos="up"><img src="images/export.svg"></a>
+							</div>
+						</div>
+
+						<div id="timeline" class="tab-pane active no-print">
+							<svg></svg>
+						</div>
+						<div id="events_table" class="tab-content tab-pane"></div>
+					</div>
+				<!-- </div> -->
+			</div>
+		</div>
+		<svg>
+			<defs>
+			  <linearGradient id="grad3" x1="0%" y1="20%" x2="0%" y2="100%">
+				<stop offset="0%" style="stop-color:rgba(255, 77, 77, 0.8);stop-opacity:1; stop-opacity:0.8" />
+				<stop offset="100%" style="stop-color:rgba(255, 77, 77, 0.1);stop-opacity:1" />
+			  </linearGradient>
+			</defs>
+		  </svg>
+
+		<!-- Popups -->
+		<div id="popups"></div>
+	</div>
+
+	<!-- Scripts -->
+	<script src="js/ext/jquery.min.js"></script>
+	<script src="js/ext/d3.min.js"></script>
+	<script src="js/ext/nv.d3.min.js"></script>
+	<script src="js/ext/bootstrap.min.js"></script>
+	<script src="js/ext/owl.carousel.min.js"></script>
+	<script src="js/ext/jquery.dataTables.min.js"></script>
+	<script src="js/ext/dataTables.bootstrap.min.js"></script>
+	<script src="js/ext/ol.js"></script>
+	<script src="js/ext/analytics.js"></script>
+	<script src="js/ext/jput.min.js"></script>
+
+	<script src="json/gen_results.js"></script>
+	<script src="json/classification.js"></script>
+	<script src="json/tech_dtls.js"></script>
+	<script src="json/atk_vec.js"></script>
+	<script src="json/file_list.js"></script>
+	<script src="json/susp_actv.js"></script>
+	<script src="json/emu_videos.js"></script>
+	<script src="json/pcaps.js"></script>
+	<script src="json/detailed_behavioral_report.js"></script>
+	<script src="json/sba_report.js"></script>
+	<script src="json/countries.geo.js"></script>
+	<script src="json/malware_family.js"></script>
+	<script src="json/malware_family_similarities.js"></script>
+	<script src="json/mitre_data.js"></script>
+
+	<script src="js/base.js"></script>
+	<script src="js/headers.js"></script>
+	<script src="js/tables.js"></script>
+	<script src="js/events.js"></script>
+	<script src="js/mitre.js"></script>
+	<script src="js/emulation_video.js"></script>
+	<script src="js/load_jsons.js"></script>
+	<script src="js/dna.js"></script>
+	<script src="js/load_malware_family.js"></script>
+	<script src="js/live_services.js"></script>
+
+	<script>
+		$(document).ready(function() {
+			var loadJson = new LoadJSON();
+			loadJson.loadAll();
+
+			// Collapse
+			collapsing = false;
+			$('#main-container > .panel > .panel-heading').on('click', function() {
+				if (!collapsing) {
+					collapsing = true;
+					$(this)
+						.parents('.panel').toggleClass('panel-collapsed')
+						.end()
+						.siblings('.panel-body').slideToggle(200, () => {
+							collapsing = false;
+						});
+				}
+			});
+
+			initHeaders();
+
+			// Upon click the report's directory path is copied to clipboard, for users to obtain its content
+			$('#copy-report-path').on('click', function(event) {
+				event.preventDefault();
+
+				var htmlPathName = window.location.pathname;
+				var reportPathName = htmlPathName.substring(1, htmlPathName.lastIndexOf("/"));
+				copyTxtToClipboard(decodeURI(reportPathName))
+			});
+
+			// $(document).on('click',  function(event) {
+			// 	if (event.target === this || $(event.target).attr('class') == 'popup-close')
+			// 		$('.popup-active').toggleClass('popup-active');
+			// });
+		});
+	</script>
+	<script src="js/popup.js"></script>
+
+</body>
+</html>

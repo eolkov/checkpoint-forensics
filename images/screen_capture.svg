@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #2d3e57;
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+  <path id="Screen_capture" data-name="Screen capture" class="cls-1" d="M434,211h9v2h-9v-2Zm18,25h9v2h-9v-2Zm7-7h2v9h-2v-9Zm-25-18h2v9h-2v-9Zm0,18h2v9h-2v-9Zm25-18h2v9h-2v-9Zm-7,0h9v2h-9v-2Zm-18,25h9v2h-9v-2Zm6-16h15v9H440v-9Z" transform="translate(-431.5 -208.5)"/>
+</svg>
